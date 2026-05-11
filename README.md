@@ -1,55 +1,78 @@
 # VNPAY Crawl & Analysis
 
-Thu thap va phan tich review ung dung VNPAY tren Google Play.
+Dự án thu thập và phân tích đánh giá ứng dụng VNPAY trên Google Play, phục vụ mục tiêu theo dõi chất lượng sản phẩm, xu hướng trải nghiệm người dùng và các nhóm vấn đề nổi bật theo thời gian.
 
-## Tep duoc dua len repo
-- crawl_vnpay_reviews.py: Script crawl review tu Google Play.
-- analyze_reviews.py: Pipeline cleaning + profiling + analysis.
-- analysis_report.md: Bao cao tong hop ket qua phan tich.
-- vnpay_dashboard.html: Dashboard trinh bay KPI/xu huong.
-- dashboard.png: Anh chup dashboard de xem nhanh tren GitHub.
-- Insights trọng tâm.docx: Tai lieu insight tong hop cho stakeholder.
-- vnpay_reviews_cleaned.csv: Du lieu da lam sach de tai hien dashboard va bao cao.
-- extracted_samples.json: Mau review trich xuat phuc vu tham khao nhanh.
-- VNPAY_logo.png: Tai nguyen hinh anh cho dashboard.
+## 1. Mục tiêu dự án
 
-## Xem nhanh tren repo
+- Thu thập dữ liệu đánh giá từ Google Play Store.
+- Làm sạch dữ liệu, đánh giá chất lượng dữ liệu và tạo báo cáo phân tích.
+- Trực quan hóa kết quả bằng dashboard để theo dõi nhanh các chỉ số chính.
 
-Tai lieu insight:
-- [Insights trọng tâm.docx](Insights%20tr%E1%BB%8Dng%20t%C3%A2m.docx)
+## 2. Nội dung chính trong repo
 
-Anh dashboard tong quan:
+- [crawl_vnpay_reviews.py](crawl_vnpay_reviews.py): Script crawl dữ liệu review từ Google Play.
+- [analyze_reviews.py](analyze_reviews.py): Pipeline làm sạch dữ liệu, profiling và phân tích.
+- [analysis_report.md](analysis_report.md): Báo cáo phân tích tổng hợp.
+- [vnpay_dashboard.html](vnpay_dashboard.html): Dashboard trực quan KPI và xu hướng.
+- [dashboard.png](dashboard.png): Ảnh chụp dashboard để xem nhanh trên GitHub.
+- [Insights trọng tâm.docx](Insights%20tr%E1%BB%8Dng%20t%C3%A2m.docx): Tài liệu insight tổng hợp cho stakeholder.
+- [vnpay_reviews_cleaned.csv](vnpay_reviews_cleaned.csv): Dữ liệu đã làm sạch để tái hiện báo cáo/dashboard.
+- [extracted_samples.json](extracted_samples.json): Mẫu review trích xuất phục vụ tham khảo nhanh.
+- [VNPAY_logo.png](VNPAY_logo.png): Ảnh logo dùng trong dashboard.
+
+## 3. Xem nhanh trên GitHub
+
+- Tài liệu insight: [Insights trọng tâm.docx](Insights%20tr%E1%BB%8Dng%20t%C3%A2m.docx)
+
+Ảnh dashboard tổng quan:
 
 ![Dashboard Preview](dashboard.png)
 
-## Tep giu local (khong push)
-- .venv/, *.log, cleaning_log.jsonl
-- vnpay_reviews_gstore_*.csv (du lieu raw)
-- _csv_gz_b64.txt, _logo_b64.txt (artefact trung gian)
+## 4. Tệp giữ local (không push)
 
-## Cai dat nhanh
-Yeu cau Python 3.10+.
+Các tệp dưới đây được giữ local qua [.gitignore](.gitignore):
+
+- `.venv/`, `*.log`, `cleaning_log.jsonl`
+- `vnpay_reviews_gstore_*.csv` (dữ liệu raw)
+- `_csv_gz_b64.txt`, `_logo_b64.txt` (artefact trung gian)
+
+## 5. Yêu cầu môi trường
+
+- Python 3.10 trở lên.
+- Thư viện cần thiết:
 
 ```bash
 pip install pandas numpy
 ```
 
-## Cach chay
-1. Crawl du lieu moi:
+## 6. Cách chạy
+
+1. Crawl dữ liệu mới:
+
 ```bash
 python crawl_vnpay_reviews.py
 ```
 
-2. Phan tich va sinh bao cao:
+2. Phân tích và sinh báo cáo:
+
 ```bash
 python analyze_reviews.py --input vnpay_reviews_gstore_YYYYMMDD_HHMMSS.csv
 ```
 
-Neu bo qua --input, script se tu chon file raw moi nhat co mau ten vnpay_reviews_gstore_*.csv.
+Nếu bỏ qua `--input`, script sẽ tự chọn file raw mới nhất theo mẫu `vnpay_reviews_gstore_*.csv`.
 
-3. Mo dashboard:
-Mo file vnpay_dashboard.html tren trinh duyet.
+3. Mở dashboard:
 
-## Ghi chu
-- Dashboard doc truc tiep file vnpay_reviews_cleaned.csv trong cung thu muc.
-- Trong moi lan cap nhat du lieu, chi can chay lai analyze_reviews.py de cap nhat report va CSV cleaned.
+Mở [vnpay_dashboard.html](vnpay_dashboard.html) trên trình duyệt.
+
+## 7. Đầu ra sau phân tích
+
+- [vnpay_reviews_cleaned.csv](vnpay_reviews_cleaned.csv): Dữ liệu sạch.
+- [analysis_report.md](analysis_report.md): Báo cáo markdown.
+- `cleaning_log.jsonl`: Log làm sạch (giữ local).
+
+## 8. Lưu ý khi nộp
+
+- Repo đã tách dữ liệu raw và artefact không cần thiết để tránh tăng dung lượng.
+- Có sẵn tài liệu insight và ảnh dashboard để người xem nắm nhanh nội dung mà không cần chạy code.
+- Có thể tái lập quy trình bằng 2 script chính: crawl và analyze.
