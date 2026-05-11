@@ -7,9 +7,20 @@ Thu thap va phan tich review ung dung VNPAY tren Google Play.
 - analyze_reviews.py: Pipeline cleaning + profiling + analysis.
 - analysis_report.md: Bao cao tong hop ket qua phan tich.
 - vnpay_dashboard.html: Dashboard trinh bay KPI/xu huong.
+- dashboard.png: Anh chup dashboard de xem nhanh tren GitHub.
+- Insights trọng tâm.docx: Tai lieu insight tong hop cho stakeholder.
 - vnpay_reviews_cleaned.csv: Du lieu da lam sach de tai hien dashboard va bao cao.
 - extracted_samples.json: Mau review trich xuat phuc vu tham khao nhanh.
 - VNPAY_logo.png: Tai nguyen hinh anh cho dashboard.
+
+## Xem nhanh tren repo
+
+Tai lieu insight:
+- [Insights trọng tâm.docx](Insights%20tr%E1%BB%8Dng%20t%C3%A2m.docx)
+
+Anh dashboard tong quan:
+
+![Dashboard Preview](dashboard.png)
 
 ## Tep giu local (khong push)
 - .venv/, *.log, cleaning_log.jsonl
