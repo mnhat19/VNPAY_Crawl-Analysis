@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VNPAY · Dashboard phân tích trải nghiệm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6f9;--surface:#fff;--border:#e2e6ed;
+  --ink:#1a1d23;--muted:#6b7280;
+  --blue:#3b6ef6;--red:#e53935;--green:#16a34a;--amber:#d97706;
+  --r:12px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+.page{max-width:1280px;margin:0 auto;padding:24px 20px 60px}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:16px;margin-bottom:24px}
+.logo{height:36px}
+.hdr-text h1{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.hdr-text p{font-size:13px;color:var(--muted);margin-top:2px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;background:#ebf0fe;color:var(--blue);margin-left:8px}
+
+/* STATUS BAR */
+#statusBar{background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:8px;padding:8px 14px;font-size:13px;margin-bottom:16px;display:none}
+
+/* FILTER */
+.filters{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.fg select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;cursor:pointer}
+.score-checks{display:flex;gap:8px;flex-wrap:wrap}
+.score-checks label{display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;user-select:none}
+.score-checks input{display:none}
+.score-checks label.active{border-color:var(--blue);background:#ebf0fe;color:var(--blue);font-weight:600}
+.btn-reset{padding:7px 14px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit;color:var(--muted)}
+.btn-reset:hover{background:#f0f4ff;border-color:var(--blue);color:var(--blue)}
+.filter-stat{font-size:12px;color:var(--muted);align-self:center;margin-left:auto}
+
+/* KPIS */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--blue)}
+.kpi.red::before{background:var(--red)}
+.kpi.green::before{background:var(--green)}
+.kpi.amber::before{background:var(--amber)}
+.kpi h4{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.kpi .val{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.card h3{font-size:14px;font-weight:600;margin-bottom:14px;color:var(--ink)}
+.chart-wrap{position:relative;height:240px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5}
+tr:last-child td{border:none}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#fff}
+.pill-red{background:var(--red)}.pill-amber{background:var(--amber)}.pill-green{background:var(--green)}
+
+/* ISSUE BARS */
+.issue-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+.issue-row:last-child{border:none}
+.issue-label{flex:0 0 180px;font-size:13px}
+.issue-bar-wrap{flex:1;background:#f3f4f6;border-radius:4px;height:8px}
+.issue-bar{height:8px;border-radius:4px;background:var(--blue);transition:width .5s}
+.issue-count{font-size:12px;color:var(--muted);width:36px;text-align:right}
+
+/* TREND TABLE subtle row color */
+.trend-down{color:var(--red);font-weight:600}
+.trend-up{color:var(--green);font-weight:600}
+
+/* LOADING */
+.loading{text-align:center;padding:60px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="hdr">
+    <img class="logo" src="VNPAY_logo.png" alt="VNPAY" onerror="this.style.display='none'"/>
+    <div class="hdr-text">
+      <h1>Dashboard phân tích đánh giá VNPAY <span class="badge" id="dataMonth"></span></h1>
+      <p>Google Play Store · Dữ liệu từ vnpay_reviews_cleaned.csv</p>
+    </div>
+  </div>
+
+  <div id="statusBar"></div>
+
+  <!-- Filters -->
+  <div class="filters" id="filters">
+    <div class="fg">
+      <label>Điểm đánh giá</label>
+      <div class="score-checks" id="scoreChecks"></div>
+    </div>
+    <div class="fg">
+      <label>Từ tháng</label>
+      <select id="mFrom"></select>
+    </div>
+    <div class="fg">
+      <label>Đến tháng</label>
+      <select id="mTo"></select>
+    </div>
+    <div class="fg">
+      <label>Phản hồi</label>
+      <select id="replyF">
+        <option value="all">Tất cả</option>
+        <option value="replied">Đã phản hồi</option>
+        <option value="unreplied">Chưa phản hồi</option>
+      </select>
+    </div>
+    <button class="btn-reset" id="btnReset">Đặt lại</button>
+    <div class="filter-stat" id="filterStat"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi"><h4>Tổng đánh giá</h4><div class="val" id="kTotal">–</div><div class="sub" id="kTotalSub"></div></div>
+    <div class="kpi amber"><h4>Điểm trung bình</h4><div class="val" id="kAvg">–</div><div class="sub" id="kAvgSub"></div></div>
+    <div class="kpi red"><h4>Tỉ lệ 1–4 sao</h4><div class="val" id="kLow">–</div><div class="sub" id="kLowSub"></div></div>
+    <div class="kpi green"><h4>Tỉ lệ phản hồi</h4><div class="val" id="kReply">–</div><div class="sub" id="kReplySub"></div></div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="g2">
+    <div class="card">
+      <h3>Phân bố điểm đánh giá</h3>
+      <div class="chart-wrap"><canvas id="cRating"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Xu hướng điểm trung bình theo tháng</h3>
+      <div class="chart-wrap"><canvas id="cTrend"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts row 2: issues + reply donut + monthly table -->
+  <div class="g2">
+    <div class="card">
+      <h3>Nhóm vấn đề trong đánh giá tiêu cực (1–4 sao)</h3>
+      <div id="issueList"></div>
+    </div>
+    <div class="card">
+      <h3>Tỉ lệ phản hồi của VNPAY</h3>
+      <div class="chart-wrap"><canvas id="cReply"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Monthly table + top negatives -->
+  <div class="g2">
+    <div class="card">
+      <h3>Thống kê theo tháng</h3>
+      <div style="overflow-x:auto">
+        <table id="tMonthly">
+          <thead><tr><th>Tháng</th><th>Lượt</th><th>TB</th><th>≤4★ %</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Top đánh giá tiêu cực được tán đồng nhiều nhất</h3>
+      <table id="tNeg">
+        <thead><tr><th>★</th><th>👍</th><th>Ngày</th><th>Nội dung</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Constants ──────────────────────────────────────────────────────────────
+const ISSUE_GROUPS = [
+  {label:'Thanh toán / Ngân hàng / Liên kết',  kw:['thanh toan','ngan hang','lien ket','chuyen tien','nap tien','rut tien']},
+  {label:'Xác thực / Định danh / Khuôn mặt', kw:['xac thuc','dinh danh','khuon mat','face','cccd','nfc','vneid']},
+  {label:'Nạp tiền / Trừ tiền / Đặt vé',        kw:['nap tien','tru tien','dat ve','cgv','lich su giao dich']},
+  {label:'OTP / Mật khẩu / Đăng nhập',         kw:['otp','mat khau','dang nhap','dang ky','pin','bao mat']},
+  {label:'Hỗ trợ / Tổng đài',                  kw:['ho tro','tong dai','cskh','lien he']},
+  {label:'Ưu đãi / Voucher / Thông báo',        kw:['uu dai','khuyen mai','voucher','thong bao']},
+];
+
+const COLORS = {
+  1:'#e53935',2:'#e57373',3:'#fb923c',4:'#fbbf24',5:'#22c55e',
+  blue:'#3b6ef6',muted:'#9ca3af',surface:'#fff',border:'#e2e6ed'
+};
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let ALL = [], state = {scores:new Set([1,2,3,4,5]),mFrom:null,mTo:null,reply:'all'};
+let charts = {};
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+const fold = t => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+const fmt  = n => new Intl.NumberFormat('vi-VN').format(n);
+const pct  = (a,b) => b ? (a/b*100).toFixed(1)+'%' : '–';
+
+function parseRow(r){
+  const score  = +r.score||0;
+  const thumbs = +r.thumbsUpCount||0;
+  const content= (r.content||r.content_raw||'').trim();
+  const folded = r.content_fold ? fold(r.content_fold) : fold(content);
+  const date   = r.at_dt||r.at||'';
+  const month  = date.slice(0,7);
+  const replied= !!(r.replyContent||'').trim();
+  return {score,thumbs,content,folded,date,month,replied};
+}
+
+// ─── Filters ─────────────────────────────────────────────────────────────────
+function applyFilters(){
+  const {scores,mFrom,mTo,reply} = state;
+  const f = ALL.filter(r=>{
+    if(!scores.has(r.score)) return false;
+    if(mFrom && r.month < mFrom) return false;
+    if(mTo   && r.month > mTo)   return false;
+    if(reply==='replied'   && !r.replied) return false;
+    if(reply==='unreplied' &&  r.replied) return false;
+    return true;
+  });
+  render(f);
+  document.getElementById('filterStat').textContent = `Đang hiển thị ${fmt(f.length)} / ${fmt(ALL.length)} đánh giá`;
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function render(data){
+  renderKPIs(data);
+  renderRatingChart(data);
+  renderTrendChart(data);
+  renderReplyChart(data);
+  renderIssues(data);
+  renderMonthly(data);
+  renderNeg(data);
+}
+
+function renderKPIs(d){
+  const total = d.length;
+  const avg   = total ? d.reduce((s,r)=>s+r.score,0)/total : 0;
+  const low   = d.filter(r=>r.score<=4).length;
+  const rep   = d.filter(r=>r.replied).length;
+
+  document.getElementById('kTotal').textContent    = fmt(total);
+  document.getElementById('kTotalSub').textContent = 'reviews đã làm sạch';
+  document.getElementById('kAvg').textContent      = avg.toFixed(2)+' ★';
+  document.getElementById('kAvgSub').textContent   = '(thang điểm 1–5)';
+  document.getElementById('kLow').textContent      = pct(low,total);
+  document.getElementById('kLowSub').textContent   = fmt(low)+' lượt 1–4 sao';
+  document.getElementById('kReply').textContent    = pct(rep,total);
+  document.getElementById('kReplySub').textContent = fmt(rep)+' đã phản hồi';
+}
+
+function mkChart(id,cfg){
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id),cfg);
+}
+
+function renderRatingChart(d){
+  const counts = [1,2,3,4,5].map(s=>d.filter(r=>r.score===s).length);
+  mkChart('cRating',{
+    type:'bar',
+    data:{
+      labels:['1 ★','2 ★','3 ★','4 ★','5 ★'],
+      datasets:[{data:counts,backgroundColor:[COLORS[1],COLORS[2],COLORS[3],COLORS[4],COLORS[5]],borderRadius:6,borderSkipped:false}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#f3f4f6'}}}}
+  });
+}
+
+function renderTrendChart(d){
+  const map = {};
+  d.forEach(r=>{if(r.month&&r.month!=='Không rõ'){if(!map[r.month])map[r.month]={s:0,n:0};map[r.month].s+=r.score;map[r.month].n++;}});
+  const months = Object.keys(map).sort();
+  const avgs   = months.map(m=>(map[m].s/map[m].n).toFixed(2));
+  mkChart('cTrend',{
+    type:'line',
+    data:{labels:months,datasets:[{label:'Điểm TB',data:avgs,borderColor:COLORS.blue,backgroundColor:'rgba(59,110,246,.08)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:COLORS.blue}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{maxRotation:45}},y:{min:1,max:5,grid:{color:'#f3f4f6'}}}}
+  });
+}
+
+function renderReplyChart(d){
+  const rep = d.filter(r=>r.replied).length;
+  const unr = d.length - rep;
+  mkChart('cReply',{
+    type:'doughnut',
+    data:{labels:['Đã phản hồi','Chưa phản hồi'],datasets:[{data:[rep,unr],backgroundColor:[COLORS[5],COLORS[1]],borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{padding:16,font:{size:13}}}}}
+  });
+}
+
+function renderIssues(d){
+  const neg = d.filter(r=>r.score<=4);
+  const total = neg.length||1;
+  const scored = ISSUE_GROUPS.map(g=>{
+    const cnt = neg.filter(r=>g.kw.some(k=>r.folded.includes(k))).length;
+    return {...g,cnt};
+  }).sort((a,b)=>b.cnt-a.cnt);
+  const max = scored[0]?.cnt||1;
+  const el = document.getElementById('issueList');
+  el.innerHTML = scored.map(g=>`
+    <div class="issue-row">
+      <div class="issue-label">${g.label}</div>
+      <div class="issue-bar-wrap"><div class="issue-bar" style="width:${(g.cnt/max*100).toFixed(1)}%"></div></div>
+      <div class="issue-count">${g.cnt}</div>
+    </div>`).join('');
+}
+
+function renderMonthly(d){
+  const map = {};
+  d.forEach(r=>{
+    const m=r.month||'Không rõ';
+    if(!map[m])map[m]={n:0,s:0,low:0};
+    map[m].n++;map[m].s+=r.score;
+    if(r.score<=4)map[m].low++;
+  });
+  const rows = Object.entries(map).sort(([a],[b])=>a<b?-1:1);
+  const tb = document.querySelector('#tMonthly tbody');
+  tb.innerHTML = rows.map(([m,v])=>{
+    const avg=(v.s/v.n).toFixed(2);
+    const lp=(v.low/v.n*100).toFixed(0);
+    const cls=avg<3?'trend-down':avg>=4.5?'trend-up':'';
+    // 2025-05: lượng review bất thường do sự kiện lớn (~92x so với tháng thường)
+    const note = m==='2025-05' ? ' <span title="Tháng có lượng review bất thường (~4.065 lượt, nghi do sự kiện/chiến dịch marketing). Không đại diện cho chất lượng thường ngày." style="cursor:help;color:#d97706;font-size:11px">⚠</span>' : '';
+    return `<tr><td>${m}${note}</td><td>${fmt(v.n)}</td><td class="${cls}">${avg}</td><td>${lp}%</td></tr>`;
+  }).join('');
+}
+
+// Từ tích cực – dấu hiệu review bất thường (nội dung khen nhưng điểm thấp)
+const POS_SIGNALS = ['cam on','thank','tuyet','dep','han hanh','yen tam','on dinh','tot lam','rat tot','hieu qua','hai long','ung ho','tran trinh dien','drone'];
+function isAnomaly(r){
+  if(r.score>1) return false; // chỉ lọc 1 sao
+  const f = r.folded;
+  return POS_SIGNALS.some(k=>f.includes(k));
+}
+
+function renderNeg(d){
+  const tb = document.querySelector('#tNeg tbody');
+  const pillCls = s=>s<=2?'pill-red':s<=4?'pill-amber':'pill-green';
+  const neg = d.filter(r=>r.score<=2)
+    .sort((a,b)=>b.thumbs-a.thumbs||a.score-b.score);
+  let shown = 0;
+  const rows = [];
+  for(const r of neg){
+    const anom = isAnomaly(r);
+    if(shown < 7 || anom){
+      const anomNote = anom ? ' <span title="Nội dung có vẻ tích cực — khả năng nhầm điểm hoặc phản ứng sự kiện" style="cursor:help;color:#d97706;font-size:11px">⚠</span>' : '';
+      rows.push(`
+    <tr style="${anom?'opacity:.6':''}">
+      <td><span class="pill ${pillCls(r.score)}">${r.score}</span></td>
+      <td>${r.thumbs}</td>
+      <td>${(r.date||'').slice(0,10)}</td>
+      <td style="max-width:280px;word-break:break-word">${r.content.slice(0,160)}${r.content.length>160?'…':''}${anomNote}</td>
+    </tr>`);
+      if(!anom) shown++;
+      if(shown>=7 && !anom) break;
+    }
+  }
+  tb.innerHTML = rows.slice(0,9).join('');
+}
+
+// ─── Filter UI setup ─────────────────────────────────────────────────────────
+function setupScoreChecks(){
+  const c = document.getElementById('scoreChecks');
+  c.innerHTML = '';
+  [1,2,3,4,5].forEach(s=>{
+    const lbl = document.createElement('label');
+    lbl.className = 'active';
+    lbl.dataset.score = s;
+    lbl.textContent = s+' ★';
+    lbl.addEventListener('click',()=>{
+      if(state.scores.has(s)){if(state.scores.size>1){state.scores.delete(s);lbl.classList.remove('active');}}
+      else{state.scores.add(s);lbl.classList.add('active');}
+      applyFilters();
+    });
+    c.appendChild(lbl);
+  });
+}
+
+function setupMonthSelects(months){
+  ['mFrom','mTo'].forEach((id,i)=>{
+    const sel=document.getElementById(id);
+    sel.innerHTML=months.map(m=>`<option value="${m}">${m}</option>`).join('');
+    sel.value=months[i===0?0:months.length-1];
+    sel.addEventListener('change',()=>{
+      state.mFrom=document.getElementById('mFrom').value;
+      state.mTo=document.getElementById('mTo').value;
+      if(state.mFrom>state.mTo){
+        if(id==='mFrom')document.getElementById('mTo').value=state.mFrom,state.mTo=state.mFrom;
+        else document.getElementById('mFrom').value=state.mTo,state.mFrom=state.mTo;
+      }
+      applyFilters();
+    });
+  });
+  state.mFrom=months[0]; state.mTo=months[months.length-1];
+}
+
+document.getElementById('replyF').addEventListener('change',e=>{state.reply=e.target.value;applyFilters();});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  state.scores=new Set([1,2,3,4,5]);
+  document.querySelectorAll('#scoreChecks label').forEach(l=>l.classList.add('active'));
+  document.getElementById('replyF').value='all'; state.reply='all';
+  const mos=Array.from(new Set(ALL.map(r=>r.month).filter(Boolean))).sort();
+  if(mos.length){
+    document.getElementById('mFrom').value=mos[0]; state.mFrom=mos[0];
+    document.getElementById('mTo').value=mos[mos.length-1]; state.mTo=mos[mos.length-1];
+  }
+  applyFilters();
+});
+
+// ─── Load Data ────────────────────────────────────────────────────────────────
+const bar = document.getElementById('statusBar');
+bar.style.display='block'; bar.textContent='Đang tải dữ liệu…';
+
+fetch('vnpay_reviews_cleaned.csv')
+  .then(r=>{if(!r.ok)throw new Error(r.status);return r.text();})
+  .then(csv=>{
+    Papa.parse(csv,{
+      header:true, skipEmptyLines:true,
+      complete(res){
+        ALL = res.data.map(parseRow).filter(r=>r.score>=1&&r.score<=5);
+        const months = [...new Set(ALL.map(r=>r.month).filter(Boolean))].sort();
+        document.getElementById('dataMonth').textContent = months[months.length-1]||'';
+        setupScoreChecks();
+        setupMonthSelects(months);
+        bar.style.display='none';
+        applyFilters();
+      }
+    });
+  })
+  .catch(err=>{
+    bar.style.background='#fde8e8'; bar.style.color='#c62828'; bar.style.borderColor='#e53935';
+    bar.textContent='Không thể tải file CSV. Hãy mở dashboard từ cùng thư mục chứa vnpay_reviews_cleaned.csv (dùng Live Server hoặc trình duyệt hỗ trợ file://).';
+  });
+</script>
+</body>
+</html>
